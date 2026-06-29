@@ -1,7 +1,7 @@
-package codec
+package server
 
 import (
-	"MRPC/codec/codec"
+	"MRPC/codec"
 	"encoding/json"
 	"fmt"
 	"io"
