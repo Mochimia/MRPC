@@ -11,12 +11,15 @@ import (
 )
 
 func startServer(addr chan string) {
+	//启动tcp监听器
 	l, err := net.Listen("tcp", ":0")
 	if err != nil {
 		log.Fatal("network error:", err)
 	}
 	log.Println("start rpc server on", l.Addr())
+	//把地址传给main
 	addr <- l.Addr().String()
+	//接受客户端连接
 	server.Accept(l)
 }
 
@@ -25,14 +28,18 @@ func main() {
 	go startServer(addr)
 
 	//简易的client
-	conn, _ := net.Dial("tcp", <-addr)
+	//客户端从channel接收并连接服务端的地址
+	conn, err := net.Dial("tcp", <-addr)
+	if err != nil {
+		log.Fatal("dial error:", err)
+	}
 	defer func() { _ = conn.Close() }()
 
 	time.Sleep(time.Second)
-	//send options
+	//发送 options
 	_ = json.NewEncoder(conn).Encode(server.DefaultOption)
 	cc := codec.NewGobCodec(conn)
-	//send request&receive response
+	//发送 request&receive response
 	for i := 0; i < 5; i++ {
 		h := &codec.Header{
 			ServiceMethod: "Foo.Sum",
