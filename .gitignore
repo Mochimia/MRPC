@@ -1,0 +1,39 @@
+# Go build outputs
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Go coverage
+coverage.out
+*.cover
+*.prof
+
+# Go workspace
+go.work
+go.work.sum
+
+# Binary / build directory
+bin/
+build/
+dist/
+
+# Logs
+*.log
+
+# macOS
+.DS_Store
+
+# GoLand / IntelliJ IDEA
+.idea/
+*.iml
+
+# VS Code
+.vscode/
+
+# Temporary files
+tmp/
+temp/
