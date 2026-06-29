@@ -13,6 +13,8 @@ import (
 
 const MagicNumber = 0x3bef5c
 
+// 为了实现上更简单，客户端固定采用 JSON 编码 Option，
+// 后续的 header 和 body 的编码方式由 Option 中的 CodeType 指定，
 type Option struct {
 	MagicNumber int
 	CodecType   codec.Type //消息的编解码方式
@@ -33,7 +35,7 @@ func NewServer() *Server {
 var DefaultServer = NewServer()
 
 func (server *Server) Accept(lis net.Listener) {
-	//for 循环等待socket连接简历，并开启子协程处理
+	//for 循环等待socket连接建立，并开启子协程处理
 	for {
 		conn, err := lis.Accept()
 		if err != nil {
