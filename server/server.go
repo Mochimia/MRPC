@@ -34,9 +34,11 @@ func NewServer() *Server {
 // 临时
 var DefaultServer = NewServer()
 
+// 接到连接
 func (server *Server) Accept(lis net.Listener) {
 	//for 循环等待socket连接建立，并开启子协程处理
 	for {
+		//服务端等待与客户端连接
 		conn, err := lis.Accept()
 		if err != nil {
 			log.Println("rpc server:accept error:", err)
@@ -48,7 +50,7 @@ func (server *Server) Accept(lis net.Listener) {
 
 func Accept(lis net.Listener) { DefaultServer.Accept(lis) }
 
-// 连接
+// 处理连接
 func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 	defer func() { _ = conn.Close() }()
 	var opt Option
@@ -70,6 +72,7 @@ func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 
 var invalidRequest = struct{}{}
 
+// 处理具体请求和响应
 func (server *Server) serveCodec(cc codec.Codec) {
 	//并发处理请求，需要上锁
 	sending := new(sync.Mutex)
