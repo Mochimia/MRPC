@@ -9,11 +9,12 @@ import (
 	"net"
 	"reflect"
 	"sync"
+	"sync/atomic"
 )
 
 const MagicNumber = 0x3bef5c
 
-// 为了实现上更简单，客户端固定采用 JSON 编码 Option，
+// Option 为了实现上更简单，客户端固定采用 JSON 编码 Option，
 // 后续的 header 和 body 的编码方式由 Option 中的 CodeType 指定，
 type Option struct {
 	MagicNumber int
@@ -31,10 +32,10 @@ func NewServer() *Server {
 	return &Server{}
 }
 
-// 临时
+// DefaultServer 临时
 var DefaultServer = NewServer()
 
-// 接到连接
+// Accept 接到连接
 func (server *Server) Accept(lis net.Listener) {
 	//for 循环等待socket连接建立，并开启子协程处理
 	for {
@@ -50,7 +51,7 @@ func (server *Server) Accept(lis net.Listener) {
 
 func Accept(lis net.Listener) { DefaultServer.Accept(lis) }
 
-// 处理连接
+// ServeConn 处理连接
 func (server *Server) ServeConn(conn io.ReadWriteCloser) {
 	defer func() { _ = conn.Close() }()
 	var opt Option
@@ -144,4 +145,38 @@ func (server *Server) handleRequest(cc codec.Codec, req *request, sending *sync.
 	log.Println(req.h, req.argv.Elem()) //如果是指针那就拿到指针指向的值
 	req.replyv = reflect.ValueOf(fmt.Sprintf("MRPC resp %d", req.h.Seq))
 	server.sendResponse(cc, req.h, req.replyv.Interface(), sending)
+}
+
+type methodType struct {
+	method    reflect.Method
+	ArgType   reflect.Type
+	ReplyType reflect.Type
+	numCalls  uint64
+}
+
+func (m *methodType) NumCalls() uint64 {
+	return atomic.LoadUint64(&m.numCalls)
+}
+
+func (m *methodType) newArgv() reflect.Value {
+	var argv reflect.Value
+	//arg may be a pointer type,or a value type
+	if m.ArgType.Kind() == reflect.Ptr {
+		argv = reflect.New(m.ArgType.Elem())
+	} else {
+		argv = reflect.New(m.ArgType).Elem()
+	}
+	return argv
+}
+
+func (m *methodType) newReplyv() reflect.Value {
+	//reply must be a pointer type
+	replyv := reflect.New(m.ReplyType.Elem())
+	switch m.ReplyType.Elem().Kind() {
+	case reflect.Map:
+		replyv.Elem().Set(reflect.MakeMap(m.ReplyType.Elem()))
+	case reflect.Slice:
+		replyv.Elem().Set(reflect.MakeSlice(m.ReplyType.Elem(), 0, 0))
+	}
+	return replyv
 }
